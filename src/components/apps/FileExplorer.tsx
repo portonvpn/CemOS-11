@@ -1,306 +1,302 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { themes } from '../../store/themes';
-import { Folder, File, HardDrive, Image, Music, Video, FileText, Download, Monitor, Cpu, ChevronRight, Search, Grid, List, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 
-interface FSItem {
+interface FileItem {
   name: string;
   type: 'folder' | 'file';
-  icon?: React.ReactNode;
   size?: string;
-  modified?: string;
   ext?: string;
+  date?: string;
+  content?: string;
 }
 
-const fileSystem: Record<string, FSItem[]> = {
+interface FileSystem {
+  [key: string]: FileItem[];
+}
+
+const defaultFS: FileSystem = {
   'This PC': [
-    { name: 'Desktop', type: 'folder' },
-    { name: 'Documents', type: 'folder' },
-    { name: 'Downloads', type: 'folder' },
-    { name: 'Pictures', type: 'folder' },
-    { name: 'Music', type: 'folder' },
-    { name: 'Videos', type: 'folder' },
+    { name: 'Desktop', type: 'folder' }, { name: 'Documents', type: 'folder' }, { name: 'Downloads', type: 'folder' },
+    { name: 'Pictures', type: 'folder' }, { name: 'Music', type: 'folder' }, { name: 'Videos', type: 'folder' },
     { name: 'Local Disk (C:)', type: 'folder' },
-    { name: 'Data Drive (D:)', type: 'folder' },
   ],
   Desktop: [
-    { name: 'readme.txt', type: 'file', size: '2 KB', modified: '2025-12-15', ext: 'txt' },
-    { name: 'project-notes.md', type: 'file', size: '8 KB', modified: '2025-12-20', ext: 'md' },
-    { name: 'screenshot.png', type: 'file', size: '1.2 MB', modified: '2025-12-22', ext: 'png' },
-    { name: 'Work', type: 'folder' },
+    { name: 'readme.txt', type: 'file', size: '2 KB', ext: 'txt', date: '2025-01-15', content: 'Welcome to CemOS 11!\n\nThis is your desktop readme file.' },
+    { name: 'notes.md', type: 'file', size: '1 KB', ext: 'md', date: '2025-01-18', content: '# My Notes\n\n- Todo item 1\n- Todo item 2' },
   ],
   Documents: [
-    { name: 'Resume.pdf', type: 'file', size: '245 KB', modified: '2025-11-10', ext: 'pdf' },
-    { name: 'Budget_2025.xlsx', type: 'file', size: '156 KB', modified: '2025-10-05', ext: 'xlsx' },
-    { name: 'Meeting Notes', type: 'folder' },
+    { name: 'Resume.pdf', type: 'file', size: '245 KB', ext: 'pdf', date: '2025-01-10' },
+    { name: 'Budget.xlsx', type: 'file', size: '156 KB', ext: 'xlsx', date: '2025-01-05' },
     { name: 'Projects', type: 'folder' },
-    { name: 'report-final.docx', type: 'file', size: '89 KB', modified: '2025-12-01', ext: 'docx' },
-    { name: 'taxes-2024.pdf', type: 'file', size: '1.1 MB', modified: '2025-04-14', ext: 'pdf' },
   ],
-  Downloads: [
-    { name: 'CemOS-wallpaper-pack.zip', type: 'file', size: '45 MB', modified: '2025-12-20', ext: 'zip' },
-    { name: 'setup-v2.1.exe', type: 'file', size: '89 MB', modified: '2025-12-18', ext: 'exe' },
-    { name: 'presentation.pptx', type: 'file', size: '12 MB', modified: '2025-12-15', ext: 'pptx' },
-    { name: 'invoice_dec.pdf', type: 'file', size: '320 KB', modified: '2025-12-22', ext: 'pdf' },
-    { name: 'font-pack.zip', type: 'file', size: '8.5 MB', modified: '2025-12-10', ext: 'zip' },
-  ],
+  Downloads: [],
   Pictures: [
-    { name: 'Vacation 2025', type: 'folder' },
     { name: 'Screenshots', type: 'folder' },
-    { name: 'wallpaper-mountain.jpg', type: 'file', size: '3.4 MB', modified: '2025-08-15', ext: 'jpg' },
-    { name: 'profile-photo.png', type: 'file', size: '890 KB', modified: '2025-06-20', ext: 'png' },
-    { name: 'sunset.jpg', type: 'file', size: '2.1 MB', modified: '2025-09-03', ext: 'jpg' },
-    { name: 'cat-meme.gif', type: 'file', size: '4.5 MB', modified: '2025-11-28', ext: 'gif' },
+    { name: 'wallpaper.jpg', type: 'file', size: '3.4 MB', ext: 'jpg', date: '2024-12-20' },
   ],
   Music: [
-    { name: 'Favorites', type: 'folder' },
-    { name: 'lo-fi-beats.mp3', type: 'file', size: '8.2 MB', modified: '2025-07-10', ext: 'mp3' },
-    { name: 'ambient-rain.wav', type: 'file', size: '45 MB', modified: '2025-05-22', ext: 'wav' },
-    { name: 'podcast-ep42.mp3', type: 'file', size: '62 MB', modified: '2025-12-01', ext: 'mp3' },
+    { name: 'playlist.m3u', type: 'file', size: '2 KB', ext: 'm3u', date: '2025-01-12' },
   ],
   Videos: [
-    { name: 'Tutorials', type: 'folder' },
-    { name: 'screen-recording.mp4', type: 'file', size: '234 MB', modified: '2025-11-15', ext: 'mp4' },
-    { name: 'vacation-clip.mov', type: 'file', size: '890 MB', modified: '2025-08-20', ext: 'mov' },
+    { name: 'tutorial.mp4', type: 'file', size: '234 MB', ext: 'mp4', date: '2025-01-08' },
   ],
   'Local Disk (C:)': [
-    { name: 'CemOS', type: 'folder' },
-    { name: 'Program Files', type: 'folder' },
-    { name: 'Users', type: 'folder' },
-    { name: 'System', type: 'folder' },
+    { name: 'CemOS', type: 'folder' }, { name: 'Program Files', type: 'folder' }, { name: 'Users', type: 'folder' },
   ],
-  'Data Drive (D:)': [
-    { name: 'Backup', type: 'folder' },
-    { name: 'Games', type: 'folder' },
-    { name: 'Media', type: 'folder' },
-  ],
-  Work: [
-    { name: 'client-brief.pdf', type: 'file', size: '450 KB', modified: '2025-12-18', ext: 'pdf' },
-    { name: 'mockup-v3.fig', type: 'file', size: '12 MB', modified: '2025-12-20', ext: 'fig' },
-  ],
-  'Meeting Notes': [
-    { name: 'standup-dec-20.md', type: 'file', size: '3 KB', modified: '2025-12-20', ext: 'md' },
-    { name: 'quarterly-review.docx', type: 'file', size: '45 KB', modified: '2025-10-01', ext: 'docx' },
-  ],
-  Projects: [
-    { name: 'CemOS-UI', type: 'folder' },
-    { name: 'website-redesign', type: 'folder' },
-  ],
+  Projects: [{ name: 'project-notes.txt', type: 'file', size: '5 KB', ext: 'txt', date: '2025-01-17', content: 'Project planning notes...' }],
+  Screenshots: [],
+  CemOS: [{ name: 'system.dll', type: 'file', size: '2.4 MB', ext: 'dll', date: '2025-01-01' }],
+  'Program Files': [{ name: 'CemBrowser', type: 'folder' }],
+  Users: [{ name: 'User', type: 'folder' }],
+  CemBrowser: [],
+  User: [{ name: 'AppData', type: 'folder' }],
+  AppData: [],
 };
 
-const sidebarItems = [
-  { name: 'Quick Access', icon: '⭐', isHeader: true },
-  { name: 'Desktop', icon: <Monitor size={16} /> },
-  { name: 'Downloads', icon: <Download size={16} /> },
-  { name: 'Documents', icon: <FileText size={16} /> },
-  { name: 'Pictures', icon: <Image size={16} /> },
-  { name: 'This PC', icon: '💻', isHeader: true },
-  { name: 'This PC', icon: <Cpu size={16} /> },
-  { name: 'Local Disk (C:)', icon: <HardDrive size={16} /> },
-  { name: 'Data Drive (D:)', icon: <HardDrive size={16} /> },
+const loadFS = (): FileSystem => {
+  try {
+    const saved = localStorage.getItem('cemos-fs');
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return defaultFS;
+};
+
+const saveFS = (fs: FileSystem) => {
+  localStorage.setItem('cemos-fs', JSON.stringify(fs));
+};
+
+const iconFor = (t: string, ext?: string) => {
+  if (t === 'folder') return '📁';
+  if (!ext) return '📄';
+  if (['jpg', 'png', 'gif', 'svg', 'webp'].includes(ext)) return '🖼️';
+  if (['mp3', 'wav', 'flac', 'm3u'].includes(ext)) return '🎵';
+  if (['mp4', 'mov', 'avi', 'mkv'].includes(ext)) return '🎬';
+  if (ext === 'pdf') return '📕';
+  if (['zip', 'rar', '7z'].includes(ext)) return '📦';
+  if (['exe', 'dll'].includes(ext)) return '⚡';
+  if (['txt', 'md'].includes(ext)) return '📝';
+  if (['xlsx', 'xls'].includes(ext)) return '📊';
+  if (['doc', 'docx'].includes(ext)) return '📘';
+  return '📄';
+};
+
+const sidebar = [
+  { h: 'Quick Access' }, { name: 'Desktop', i: '🖥️' }, { name: 'Downloads', i: '⬇️' }, { name: 'Documents', i: '📄' }, { name: 'Pictures', i: '🖼️' },
+  { h: 'Drives' }, { name: 'This PC', i: '💻' }, { name: 'Local Disk (C:)', i: '💾' },
 ];
 
-const getFileIcon = (item: FSItem, size: number = 18) => {
-  if (item.type === 'folder') return <Folder size={size} className="text-yellow-400" />;
-  const ext = item.ext || '';
-  if (['jpg', 'png', 'gif', 'svg'].includes(ext)) return <Image size={size} className="text-green-400" />;
-  if (['mp3', 'wav', 'flac'].includes(ext)) return <Music size={size} className="text-pink-400" />;
-  if (['mp4', 'mov', 'avi'].includes(ext)) return <Video size={size} className="text-purple-400" />;
-  if (['pdf'].includes(ext)) return <FileText size={size} className="text-red-400" />;
-  if (['zip', 'rar'].includes(ext)) return <File size={size} className="text-orange-400" />;
-  if (['exe'].includes(ext)) return <Cpu size={size} className="text-blue-400" />;
-  return <File size={size} className="text-gray-400" />;
-};
-
 export const FileExplorer: React.FC = () => {
-  const settings = useStore((s) => s.settings);
-  const theme = themes[settings.theme];
-  const [currentPath, setCurrentPath] = useState<string[]>(['This PC']);
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const theme = themes[useStore(s => s.settings).theme];
+  const [fs, setFs] = useState<FileSystem>(loadFS);
+  const [path, setPath] = useState<string[]>(['This PC']);
+  const [sel, setSel] = useState<string | null>(null);
+  const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
+  const [showNew, setShowNew] = useState<'file' | 'folder' | null>(null);
+  const [newName, setNewName] = useState('');
+  const [preview, setPreview] = useState<FileItem | null>(null);
+  const [editContent, setEditContent] = useState('');
 
-  const currentFolder = currentPath[currentPath.length - 1];
-  const items = (fileSystem[currentFolder] || []).filter(
-    (i) => !search || i.name.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => { saveFS(fs); }, [fs]);
 
-  const navigateTo = (folder: string) => {
-    setCurrentPath([...currentPath, folder]);
-    setSelectedItem(null);
-    setSearch('');
+  const cur = path[path.length - 1];
+  const items = (fs[cur] || []).filter(i => !search || i.name.toLowerCase().includes(search.toLowerCase()));
+
+  const nav = (f: string) => { setPath([...path, f]); setSel(null); setSearch(''); setPreview(null); };
+  const back = () => { if (path.length > 1) { setPath(path.slice(0, -1)); setSel(null); setPreview(null); } };
+
+  const createItem = () => {
+    if (!newName.trim()) return;
+    const newItem: FileItem = showNew === 'folder'
+      ? { name: newName, type: 'folder' }
+      : { name: newName, type: 'file', size: '0 KB', ext: newName.split('.').pop() || 'txt', date: new Date().toISOString().split('T')[0], content: '' };
+    
+    const newFs = { ...fs, [cur]: [...(fs[cur] || []), newItem] };
+    if (showNew === 'folder') newFs[newName] = [];
+    setFs(newFs);
+    setShowNew(null);
+    setNewName('');
   };
 
-  const navigateBack = () => {
-    if (currentPath.length > 1) {
-      setCurrentPath(currentPath.slice(0, -1));
-      setSelectedItem(null);
+  const deleteItem = (name: string) => {
+    const item = fs[cur]?.find(i => i.name === name);
+    if (!item) return;
+    const newFs = { ...fs, [cur]: fs[cur].filter(i => i.name !== name) };
+    if (item.type === 'folder') delete newFs[name];
+    setFs(newFs);
+    setSel(null);
+    setPreview(null);
+  };
+
+  const openFile = (item: FileItem) => {
+    if (item.type === 'folder' && fs[item.name]) {
+      nav(item.name);
+    } else if (item.content !== undefined) {
+      setPreview(item);
+      setEditContent(item.content);
     }
   };
 
-  const navigateUp = () => navigateBack();
-
-  const navigateToIndex = (idx: number) => {
-    setCurrentPath(currentPath.slice(0, idx + 1));
-    setSelectedItem(null);
+  const saveFile = () => {
+    if (!preview) return;
+    const newFs = {
+      ...fs,
+      [cur]: fs[cur].map(i => i.name === preview.name ? { ...i, content: editContent } : i)
+    };
+    setFs(newFs);
+    setPreview(null);
   };
+
+  // Preview modal
+  if (preview) {
+    return (
+      <div className="flex flex-col h-full" style={{ color: theme.text }}>
+        <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: theme.border, background: theme.bgSecondary }}>
+          <span className="text-sm font-medium">{preview.name}</span>
+          <div className="flex gap-2">
+            <button onClick={saveFile} className="px-3 py-1 rounded text-xs" style={{ background: theme.accent, color: '#fff' }}>Save</button>
+            <button onClick={() => setPreview(null)} className="px-3 py-1 rounded text-xs" style={{ background: theme.bgTertiary }}>Close</button>
+          </div>
+        </div>
+        <textarea
+          value={editContent}
+          onChange={e => setEditContent(e.target.value)}
+          className="flex-1 p-4 bg-transparent outline-none resize-none text-sm font-mono"
+          style={{ color: theme.text }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full" style={{ color: theme.text }}>
-      {/* Sidebar */}
-      <div
-        className="w-52 shrink-0 flex flex-col py-2 overflow-y-auto border-r"
-        style={{ background: theme.bgSecondary, borderColor: theme.border }}
-      >
-        {sidebarItems.map((item, i) =>
-          item.isHeader ? (
-            <p key={i} className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>
-              {item.name}
-            </p>
-          ) : (
-            <button
-              key={i}
-              onClick={() => {
-                setCurrentPath([item.name]);
-                setSelectedItem(null);
-              }}
-              className="flex items-center gap-2.5 px-4 py-1.5 text-sm hover:bg-white/5 transition-colors mx-1 rounded-md"
-              style={{
-                color: currentFolder === item.name ? theme.accent : theme.textSecondary,
-                background: currentFolder === item.name ? `${theme.accent}15` : undefined,
-              }}
-            >
-              <span className="opacity-70">{item.icon}</span>
-              {item.name}
-            </button>
-          )
-        )}
+      <div className="w-44 shrink-0 flex flex-col py-2 overflow-y-auto border-r no-scrollbar" style={{ background: theme.bgSecondary, borderColor: theme.border }}>
+        {sidebar.map((s, i) => 'h' in s ? (
+          <p key={i} className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>{s.h}</p>
+        ) : (
+          <button key={i} onClick={() => { setPath([s.name!]); setSel(null); }}
+            className="flex items-center gap-2 px-3 py-1.5 mx-1 rounded text-[12px] hover:bg-white/5 transition-colors"
+            style={{ color: cur === s.name ? theme.accent : theme.textSecondary, background: cur === s.name ? `${theme.accent}12` : undefined }}>
+            <span className="text-sm">{s.i}</span>{s.name}
+          </button>
+        ))}
       </div>
 
-      {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Toolbar */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: theme.border }}>
-          <button onClick={navigateBack} className="p-1.5 rounded-md hover:bg-white/5" style={{ color: theme.textMuted }}>
-            <ArrowLeft size={16} />
+        <div className="flex items-center gap-1.5 px-2 py-1.5 border-b flex-wrap" style={{ borderColor: theme.border }}>
+          <button onClick={back} className="p-1.5 rounded hover:bg-white/5" style={{ color: theme.textMuted }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M9 2L4 7l5 5" /></svg>
           </button>
-          <button className="p-1.5 rounded-md hover:bg-white/5 opacity-40" style={{ color: theme.textMuted }}>
-            <ArrowRight size={16} />
-          </button>
-          <button onClick={navigateUp} className="p-1.5 rounded-md hover:bg-white/5" style={{ color: theme.textMuted }}>
-            <ArrowUp size={16} />
-          </button>
+          
+          <div className="flex-1 flex items-center gap-1 px-2 py-1 rounded text-[11px] min-w-0" style={{ background: theme.bgTertiary }}>
+            {path.map((p, i) => <React.Fragment key={i}>{i > 0 && <span style={{ color: theme.textMuted }}>/</span>}
+              <button onClick={() => { setPath(path.slice(0, i + 1)); setSel(null); }} className="hover:underline truncate" style={{ color: i === path.length - 1 ? theme.text : theme.textSecondary }}>{p}</button>
+            </React.Fragment>)}
+          </div>
 
-          {/* Breadcrumb */}
-          <div className="flex-1 flex items-center gap-1 px-3 py-1 rounded-md text-sm" style={{ background: theme.bgTertiary }}>
-            {currentPath.map((p, i) => (
-              <React.Fragment key={i}>
-                {i > 0 && <ChevronRight size={12} style={{ color: theme.textMuted }} />}
-                <button
-                  onClick={() => navigateToIndex(i)}
-                  className="hover:underline px-1"
-                  style={{ color: i === currentPath.length - 1 ? theme.text : theme.textSecondary }}
-                >
-                  {p}
-                </button>
-              </React.Fragment>
+          <div className="flex items-center gap-1 px-2 py-1 rounded" style={{ background: theme.bgTertiary }}>
+            <span style={{ color: theme.textMuted, fontSize: 11 }}>🔍</span>
+            <input type="text" placeholder="Search" value={search} onChange={e => setSearch(e.target.value)}
+              className="bg-transparent outline-none text-[11px] w-16" style={{ color: theme.text }} />
+          </div>
+
+          <button onClick={() => setShowNew('folder')} className="px-2 py-1 rounded text-[10px] hover:bg-white/5" style={{ color: theme.textSecondary }}>+ Folder</button>
+          <button onClick={() => setShowNew('file')} className="px-2 py-1 rounded text-[10px] hover:bg-white/5" style={{ color: theme.textSecondary }}>+ File</button>
+
+          <div className="flex gap-px p-0.5 rounded" style={{ background: theme.bgTertiary }}>
+            {(['grid', 'list'] as const).map(v => (
+              <button key={v} onClick={() => setView(v)} className="px-1.5 py-0.5 rounded text-[10px]"
+                style={{ background: view === v ? `${theme.accent}20` : 'transparent', color: view === v ? theme.accent : theme.textMuted }}>
+                {v === 'grid' ? '⊞' : '☰'}
+              </button>
             ))}
-          </div>
-
-          {/* Search */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md" style={{ background: theme.bgTertiary }}>
-            <Search size={14} style={{ color: theme.textMuted }} />
-            <input
-              type="text"
-              placeholder="Search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="bg-transparent outline-none text-sm w-28"
-              style={{ color: theme.text }}
-            />
-          </div>
-
-          {/* View toggle */}
-          <div className="flex gap-0.5 p-0.5 rounded-md" style={{ background: theme.bgTertiary }}>
-            <button
-              onClick={() => setViewMode('grid')}
-              className="p-1.5 rounded"
-              style={{ background: viewMode === 'grid' ? theme.accent + '25' : 'transparent', color: viewMode === 'grid' ? theme.accent : theme.textMuted }}
-            >
-              <Grid size={14} />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className="p-1.5 rounded"
-              style={{ background: viewMode === 'list' ? theme.accent + '25' : 'transparent', color: viewMode === 'list' ? theme.accent : theme.textMuted }}
-            >
-              <List size={14} />
-            </button>
           </div>
         </div>
 
+        {/* New item input */}
+        {showNew && (
+          <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: theme.border, background: theme.bgTertiary }}>
+            <span className="text-sm">{showNew === 'folder' ? '📁' : '📄'}</span>
+            <input
+              type="text"
+              placeholder={showNew === 'folder' ? 'Folder name' : 'filename.txt'}
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && createItem()}
+              className="flex-1 bg-transparent outline-none text-[12px]"
+              style={{ color: theme.text }}
+              autoFocus
+            />
+            <button onClick={createItem} className="px-2 py-0.5 rounded text-[10px]" style={{ background: theme.accent, color: '#fff' }}>Create</button>
+            <button onClick={() => { setShowNew(null); setNewName(''); }} className="px-2 py-0.5 rounded text-[10px]" style={{ color: theme.textMuted }}>Cancel</button>
+          </div>
+        )}
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-2">
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full opacity-40">
-              <Folder size={48} />
-              <p className="mt-2 text-sm">This folder is empty</p>
+            <div className="flex flex-col items-center justify-center h-full opacity-30">
+              <span className="text-3xl mb-2">📂</span>
+              <p className="text-xs">This folder is empty</p>
             </div>
-          ) : viewMode === 'grid' ? (
-            <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))' }}>
-              {items.map((item) => (
+          ) : view === 'grid' ? (
+            <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))' }}>
+              {items.map(item => (
                 <button
                   key={item.name}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-lg transition-all hover:bg-white/5"
-                  style={{
-                    background: selectedItem === item.name ? `${theme.accent}18` : undefined,
-                    border: selectedItem === item.name ? `1px solid ${theme.accent}40` : '1px solid transparent',
-                  }}
-                  onClick={() => setSelectedItem(item.name)}
-                  onDoubleClick={() => item.type === 'folder' && fileSystem[item.name] && navigateTo(item.name)}
-                >
-                  {getFileIcon(item, 32)}
-                  <span className="text-[11px] text-center leading-tight line-clamp-2 w-full" style={{ color: theme.textSecondary }}>
-                    {item.name}
-                  </span>
+                  onClick={() => setSel(item.name)}
+                  onDoubleClick={() => openFile(item)}
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-white/5 transition-all relative group"
+                  style={{ background: sel === item.name ? `${theme.accent}15` : undefined, border: sel === item.name ? `1px solid ${theme.accent}30` : '1px solid transparent' }}>
+                  <span className="text-2xl">{iconFor(item.type, item.ext)}</span>
+                  <span className="text-[10px] text-center leading-tight line-clamp-2 w-full" style={{ color: theme.textSecondary }}>{item.name}</span>
+                  {sel === item.name && (
+                    <button onClick={(e) => { e.stopPropagation(); deleteItem(item.name); }}
+                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ background: '#ef4444', color: '#fff' }}>✕</button>
+                  )}
                 </button>
               ))}
             </div>
           ) : (
             <div className="flex flex-col">
-              <div className="grid grid-cols-[1fr_80px_120px] gap-2 px-3 py-1.5 text-xs font-medium border-b" style={{ color: theme.textMuted, borderColor: theme.border }}>
-                <span>Name</span>
-                <span>Size</span>
-                <span>Modified</span>
+              <div className="grid grid-cols-[1fr_60px_80px_30px] gap-2 px-2 py-1 text-[10px] font-medium border-b" style={{ color: theme.textMuted, borderColor: theme.border }}>
+                <span>Name</span><span>Size</span><span>Date</span><span></span>
               </div>
-              {items.map((item) => (
-                <button
-                  key={item.name}
-                  className="grid grid-cols-[1fr_80px_120px] gap-2 px-3 py-2 text-sm rounded-md hover:bg-white/5 transition-colors items-center"
-                  style={{
-                    background: selectedItem === item.name ? `${theme.accent}18` : undefined,
-                  }}
-                  onClick={() => setSelectedItem(item.name)}
-                  onDoubleClick={() => item.type === 'folder' && fileSystem[item.name] && navigateTo(item.name)}
-                >
-                  <span className="flex items-center gap-2.5 truncate" style={{ color: theme.text }}>
-                    {getFileIcon(item, 16)}
-                    {item.name}
+              {items.map(item => (
+                <div key={item.name}
+                  onClick={() => setSel(item.name)}
+                  onDoubleClick={() => openFile(item)}
+                  className="grid grid-cols-[1fr_60px_80px_30px] gap-2 px-2 py-1.5 text-[11px] rounded hover:bg-white/5 items-center cursor-pointer"
+                  style={{ background: sel === item.name ? `${theme.accent}15` : undefined }}>
+                  <span className="flex items-center gap-2 truncate" style={{ color: theme.text }}>
+                    <span className="text-sm">{iconFor(item.type, item.ext)}</span>{item.name}
                   </span>
-                  <span style={{ color: theme.textMuted }}>{item.size || '--'}</span>
-                  <span style={{ color: theme.textMuted }}>{item.modified || '--'}</span>
-                </button>
+                  <span style={{ color: theme.textMuted }}>{item.size || '—'}</span>
+                  <span style={{ color: theme.textMuted }}>{item.date || '—'}</span>
+                  <button onClick={(e) => { e.stopPropagation(); deleteItem(item.name); }} className="text-[10px] hover:text-red-400" style={{ color: theme.textMuted }}>🗑️</button>
+                </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Status bar */}
-        <div className="flex items-center justify-between px-3 py-1.5 text-[11px] border-t" style={{ borderColor: theme.border, color: theme.textMuted }}>
-          <span>{items.length} items</span>
-          {selectedItem && <span>Selected: {selectedItem}</span>}
+        <div className="flex items-center justify-between px-3 py-1 text-[10px] border-t" style={{ borderColor: theme.border, color: theme.textMuted }}>
+          <span>{items.length} items</span>{sel && <span>{sel}</span>}
         </div>
       </div>
     </div>
   );
+};
+
+// Export for downloads integration
+export const addDownload = (name: string, size: string) => {
+  try {
+    const fs = JSON.parse(localStorage.getItem('cemos-fs') || '{}');
+    if (!fs.Downloads) fs.Downloads = [];
+    fs.Downloads.push({ name, type: 'file', size, ext: name.split('.').pop() || '', date: new Date().toISOString().split('T')[0] });
+    localStorage.setItem('cemos-fs', JSON.stringify(fs));
+  } catch {}
 };
